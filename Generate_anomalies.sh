@@ -7,17 +7,17 @@
 #Program uses CDO (https://code.mpimet.mpg.de/projects/cdo)
 
 #Modify to relevant cordex file names
-cordex_hist_model=NCC-NorESM1-M_historical_r1i1p1_DMI-HIRHAM5_v3
-cordex_GCMmodel=NCC-NorESM1-M
+cordex_hist_model=MPI-M-MPI-ESM-LR_historical_r1i1p1_DMI-HIRHAM5_v3
+cordex_GCMmodel=MPI-M-MPI-ESM-LR
 cordex_GCM_sim=r1i1p1
-cordex_RCM=DMI-HIRHAM5_v3
+cordex_RCM=CLMcom-CCLM4-8-17_v1
 
 #Path to folders with cordex files and output files
 indir=/div/no-backup/CORDEX/EUR-11/
 outdir=/storage/no-backup-nac/PATHFINDER/EURO-CORDEX/
 
 #Define varialbe and scenario
-var=pr #pr, tas 
+var=tas #pr, tas 
 scenario=rcp85 #rcp45, rcp85
 
 anomaly_list="tas uas vas ps huss"
@@ -29,7 +29,7 @@ eyear_baseline=2015 #NB: climatology calculation is currently partly hardcoded t
 #Define derived paths and base filenames
 infile_hist_basename=$indir/historical/${var}/${var}_EUR-11_${cordex_GCMmodel}_historical_${cordex_GCM_sim}_${cordex_RCM}_mon
 outfile_baseclimate=$outdir/${var}_EUR-11_${cordex_hist_model}_yearmonavg_$syear_baseline-$eyear_baseline.nc
-outfile_anomaly=${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}_anomalies_2005-2090.nc
+outfile_anomaly=${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}_anomalies_2005-2100.nc
 
 infile_scenario_path=$indir/$scenario/$var/
 infile_scenario_basename=${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}_mon
@@ -40,16 +40,22 @@ infile_scenario_basename=${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_G
 #Download with wget script (use -s to scip credentials), e.g.:
 #bash WGET_pr_EUR-11_NCC-NorESM1-M_rcp45_r1i1p1_DMI-HIRHAM5_v3_mon.sh -s 
 
-###Generate basline climatology. Currently partly hardcoded 1996-2015 baseline period. Always use rcp45 for 2006-2015 (scenario period in CMIP5)
+###Generate basline climatology. Currently partly hardcoded 1996-2015 baseline period. 
 cdo ymonavg -selyear,$syear_baseline/$eyear_baseline -mergetime ${infile_hist_basename}_199101-200012.nc ${infile_hist_basename}_200101-200512.nc \
-    $indir/rcp45/$var/${var}_EUR-11_${cordex_GCMmodel}_rcp45_${cordex_GCM_sim}_${cordex_RCM}_mon_200601-201012.nc \
-    -selyear,2011/2015 $indir/rcp45/$var/${var}_EUR-11_${cordex_GCMmodel}_rcp45_${cordex_GCM_sim}_${cordex_RCM}_mon_201101-202012.nc \
+    $indir/${scenario}/$var/${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}_mon_200601-201012.nc \
+    -selyear,2011/2015 $indir/${scenario}/$var/${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}_mon_201101-202012.nc \
     $outfile_baseclimate
 
 #Merge data and split by month (for calculating running mean)
 mkdir -p $outdir/$scenario/$var/
 
-cdo -splitmon -mergetime -selyear,1996/2000 ${infile_hist_basename}_199101-200012.nc ${infile_hist_basename}_200101-200512.nc $infile_scenario_path/$infile_scenario_basename* $outdir/$scenario/$var/temp_mon_${var}_1996-2100_
+#Repeat last 10 years with shifted time stap, to be able to run "runmean" until 2100
+infile_lastdecade_temp=$infile_scenario_path/${infile_scenario_basename}_209101-210012.nc
+outfile_lastdecade_temp=$outdir/$scenario/$var/temp_fillyears_210101-211012.nc
+cdo showtimestamp $infile_lastdecade_temp > $outdir/$scenario/$var/temp_original_timestamps.txt
+cdo shifttime,3652day $infile_lastdecade_temp $outfile_lastdecade_temp
+cdo -splitmon -mergetime -selyear,1996/2000 ${infile_hist_basename}_199101-200012.nc ${infile_hist_basename}_200101-200512.nc \
+    $infile_scenario_path/$infile_scenario_basename* $outfile_lastdecade_temp $outdir/$scenario/$var/temp_mon_${var}_1996-2100_
 
 #Calculate running mean
 for file in $outdir/$scenario/$var/temp_mon_${var}_1996-2100_*; do
