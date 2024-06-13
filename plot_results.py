@@ -5,12 +5,12 @@ import cartopy.crs as ccrs
 
 # Define variable and scenario
 var='tas' #tas or pr
-scenario='rcp85'
+scenario='rcp26'
 outdir='Figures/'
 
 cordex_GCMmodel='MPI-M-MPI-ESM-LR'
 cordex_GCM_sim='r1i1p1'
-cordex_RCM='CLMcom-CCLM4-8-17_v1'
+cordex_RCM='MPI-CSC-REMO2009_v1' #CLMcom-CCLM4-8-17_v1, MPI-CSC-REMO2009_v1
 
 selected_lat = 60.0  
 selected_lon = 10.75  

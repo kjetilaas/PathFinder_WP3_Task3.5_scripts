@@ -7,10 +7,11 @@
 #Program uses CDO (https://code.mpimet.mpg.de/projects/cdo)
 
 #Modify to relevant cordex file names
-cordex_hist_model=MPI-M-MPI-ESM-LR_historical_r1i1p1_DMI-HIRHAM5_v3
 cordex_GCMmodel=MPI-M-MPI-ESM-LR
 cordex_GCM_sim=r1i1p1
-cordex_RCM=CLMcom-CCLM4-8-17_v1
+cordex_RCM=CLMcom-CCLM4-8-17_v1 #CLMcom-CCLM4-8-17_v1, MPI-CSC-REMO2009_v1
+cordex_hist_model=${cordex_GCMmodel}_historical_${cordex_GCM_sim}_${cordex_RCM}
+
 
 #Path to folders with cordex files and output files
 indir=/div/no-backup/CORDEX/EUR-11/
@@ -18,7 +19,7 @@ outdir=/storage/no-backup-nac/PATHFINDER/EURO-CORDEX/
 
 #Define varialbe and scenario
 var=tas #pr, tas 
-scenario=rcp85 #rcp45, rcp85
+scenario=rcp85 #rcp26 rcp45, rcp85
 
 anomaly_list="tas uas vas ps huss"
 scale_list="pr rsds rlds" 
