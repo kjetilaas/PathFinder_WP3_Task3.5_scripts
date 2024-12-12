@@ -1,5 +1,6 @@
 #!/bin/sh
 
+script_dir=Download_scripts/
 indir=input_files/ #/div/no-backup/CORDEX/EUR-11/
 
 #Modify to relevant cordex file names
@@ -10,7 +11,7 @@ cordex_hist_model=${cordex_GCMmodel}_historical_${cordex_GCM_sim}_${cordex_RCM}
 
 for var in pr tas; do #pr tas
     for scenario in historical rcp45 rcp85; do #historical rcp26 rcp45 rcp85
-        file=$indir/WGET_${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}.sh; 
+        file=$script_dir/WGET_${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}.sh; 
         echo $file       
         if [ -f $file ]; then
             echo "Downloaded $var $scenario"
