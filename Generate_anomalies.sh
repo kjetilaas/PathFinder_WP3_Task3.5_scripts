@@ -50,6 +50,12 @@ cdo ymonavg -selyear,$syear_baseline/$eyear_baseline -mergetime ${infile_hist_ba
     -selyear,2011/2015 $indir/${scenario}/$var/${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}_mon_201101-202012.nc \
     $outfile_baseclimate
 
+#If variable is pr, set min value to 10^-10 to avoid division by zero
+if [ $var == "pr" ]; then
+    cdo -setrtoc,0,1e-10,1e-10 $outfile_baseclimate $outfile_baseclimate.temp
+    mv $outfile_baseclimate.temp $outfile_baseclimate
+fi
+
 #Merge data and split by month (for calculating running mean)
 mkdir -p $outdir/$scenario/$var/
 
@@ -59,17 +65,7 @@ outfile_lastdecade_temp=$outdir/$scenario/$var/temp_fillyears_210101-211012.nc
 cdo showtimestamp $infile_lastdecade_temp > $outdir/$scenario/$var/temp_original_timestamps.txt
 cdo shifttime,3652day $infile_lastdecade_temp $outfile_lastdecade_temp
 
-ls -l ${infile_hist_basename}_199101-200012.nc
-ls -l ${infile_hist_basename}_200101-200512.nc
-echo ''
-ls -l $infile_scenario_path/$infile_scenario_basename*
-echo ''
-ls -l $outfile_lastdecade_temp
-echo ''
-echo $outdir/$scenario/$var/
-echo ''
-ls -l $outdir/$scenario/$var/
-
+###Merge historical and scenario files, and split by month
 echo "cdo -splitmon -mergetime -selyear,1996/2000 ${infile_hist_basename}_199101-200012.nc ${infile_hist_basename}_200101-200512.nc $infile_scenario_path/$infile_scenario_basename* $outfile_lastdecade_temp $outdir/$scenario/$var/temp_mon_${var}_1996-2100_"
 echo $outfile_lastdecade_temp
 #cdo -splitmon -mergetime -selyear,1996/2000 ${infile_hist_basename}_199101-200012.nc ${infile_hist_basename}_200101-200512.nc $infile_scenario_path/$infile_scenario_basename* $outfile_lastdecade_temp $outdir/$scenario/$var/temp_mon_${var}_1996-2100_
@@ -105,16 +101,33 @@ if [[ " ${anomaly_list[@]} " =~ " ${var} " ]]; then
     done
 elif [[ " ${scale_list[@]} " =~ " ${var} " ]]; then
     echo "Calculate scaling factors"
-    for file in $outdir/$scenario/$var/temp_year_${var}_*; do    
-        #TODO: need to set zero values in baseclimate to a finite value, to avoid division by zero
-        cdo div $file $outfile_baseclimate $file.anomaly_temp.nc
-        cdo -setrtoc,5,Inf,5 -setrtoc,-Inf,0,0 $file.anomaly_temp.nc $file.anomaly.nc
+    for file in $outdir/$scenario/$var/temp_year_${var}_*; do  
+        echo $file  
+        cdo div $file $outfile_baseclimate $file.anomaly.nc
+        #cdo div $file $outfile_baseclimate $file.anomaly_temp.nc
+        #cdo -setrtoc,5,Inf,5 -setrtoc,-Inf,0,0 $file.anomaly_temp.nc $file.anomaly.nc
     done
 else
     echo "Variable not in lists"
 fi
 
-cdo mergetime $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/$outfile_anomaly
+if [[ " ${scale_list[@]} " =~ " ${var} " ]]; then
+    #cdo mergetime -setrtoc,5,1000000,5 $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/$outfile_anomaly
+    
+    cdo mergetime $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/all_notcapped.nc
+    rm $outdir/$scenario/$var/temp*
 
-rm $outdir/$scenario/$var/temp*
+    # Ensure files are ready
+    echo "Sleeping for 5 seconds..."
+    sleep 5
+    echo "Starting after sleep..."
+    
+    cdo -setrtoc,5,inf,5 $outdir/$scenario/$var/all_notcapped.nc $outdir/$scenario/$var/$outfile_anomaly
+
+    rm $outdir/$scenario/$var/all_notcapped.nc
+else
+    cdo mergetime $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/$outfile_anomaly
+    rm $outdir/$scenario/$var/temp*
+fi
+
 rm temp_*
