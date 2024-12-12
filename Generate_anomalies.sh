@@ -44,90 +44,100 @@ infile_scenario_basename=${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_G
 #Download with wget script (use -s to scip credentials), e.g.:
 #bash WGET_pr_EUR-11_NCC-NorESM1-M_rcp45_r1i1p1_DMI-HIRHAM5_v3_mon.sh -s 
 
-###Generate basline climatology. Currently partly hardcoded 1996-2015 baseline period. 
-cdo ymonavg -selyear,$syear_baseline/$eyear_baseline -mergetime ${infile_hist_basename}_199101-200012.nc ${infile_hist_basename}_200101-200512.nc \
-    $indir/${scenario}/$var/${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}_mon_200601-201012.nc \
-    -selyear,2011/2015 $indir/${scenario}/$var/${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}_mon_201101-202012.nc \
-    $outfile_baseclimate
 
-#If variable is pr, set min value to 10^-10 to avoid division by zero
-if [ $var == "pr" ]; then
-    cdo -setrtoc,0,1e-10,1e-10 $outfile_baseclimate $outfile_baseclimate.temp
-    mv $outfile_baseclimate.temp $outfile_baseclimate
-fi
+for var in pr tas; do #pr tas
+    echo 'Variable: '$var
 
-#Merge data and split by month (for calculating running mean)
-mkdir -p $outdir/$scenario/$var/
+    ###Generate basline climatology. Currently partly hardcoded 1996-2015 baseline period. 
+    cdo ymonavg -selyear,$syear_baseline/$eyear_baseline -mergetime ${infile_hist_basename}_199101-200012.nc ${infile_hist_basename}_200101-200512.nc \
+        $indir/${scenario}/$var/${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}_mon_200601-201012.nc \
+        -selyear,2011/2015 $indir/${scenario}/$var/${var}_EUR-11_${cordex_GCMmodel}_${scenario}_${cordex_GCM_sim}_${cordex_RCM}_mon_201101-202012.nc \
+        $outfile_baseclimate
 
-#Repeat last 10 years with shifted time stap, to be able to run "runmean" until 2100
-infile_lastdecade_temp=$infile_scenario_path/${infile_scenario_basename}_209101-210012.nc
-outfile_lastdecade_temp=$outdir/$scenario/$var/temp_fillyears_210101-211012.nc
-cdo showtimestamp $infile_lastdecade_temp > $outdir/$scenario/$var/temp_original_timestamps.txt
-cdo shifttime,3652day $infile_lastdecade_temp $outfile_lastdecade_temp
+    #If variable is pr, set min value to 10^-10 to avoid division by zero
+    if [ $var == "pr" ]; then
+        cdo -setrtoc,0,1e-10,1e-10 $outfile_baseclimate $outfile_baseclimate.temp
+        mv $outfile_baseclimate.temp $outfile_baseclimate
+    fi
 
-###Merge historical and scenario files, and split by month
-echo "cdo -splitmon -mergetime -selyear,1996/2000 ${infile_hist_basename}_199101-200012.nc ${infile_hist_basename}_200101-200512.nc $infile_scenario_path/$infile_scenario_basename* $outfile_lastdecade_temp $outdir/$scenario/$var/temp_mon_${var}_1996-2100_"
-echo $outfile_lastdecade_temp
-#cdo -splitmon -mergetime -selyear,1996/2000 ${infile_hist_basename}_199101-200012.nc ${infile_hist_basename}_200101-200512.nc $infile_scenario_path/$infile_scenario_basename* $outfile_lastdecade_temp $outdir/$scenario/$var/temp_mon_${var}_1996-2100_
+    for scenario in rcp26 rcp45 rcp85; do #historical rcp26 rcp45 rcp85
+        echo 'Scenario: '$scenario
 
-# Step 1: Merge historical files
-echo "Merging historical files..."
-cdo selyear,1996/2000 ${infile_hist_basename}_199101-200012.nc temp_selected_hist1.nc
+        #Merge data and split by month (for calculating running mean)
+        kdir -p $outdir/$scenario/$var/
 
-# Step 2: Merge hist and scenario files
-echo "Merging hist and scenario files..."
-cdo mergetime temp_selected_hist1.nc ${infile_hist_basename}_200101-200512.nc $infile_scenario_path/$infile_scenario_basename* temp_selected_years.nc
+        #Repeat last 10 years with shifted time stap, to be able to run "runmean" until 2100
+        infile_lastdecade_temp=$infile_scenario_path/${infile_scenario_basename}_209101-210012.nc
+        outfile_lastdecade_temp=$outdir/$scenario/$var/temp_fillyears_210101-211012.nc
+        cdo showtimestamp $infile_lastdecade_temp > $outdir/$scenario/$var/temp_original_timestamps.txt
+        cdo shifttime,3652day $infile_lastdecade_temp $outfile_lastdecade_temp
 
-# Step 4: Split by month
-echo "Splitting by month..."
-cdo splitmon temp_selected_years.nc $outdir/$scenario/$var/temp_mon_${var}_1996-2100_
+        ###Merge historical and scenario files, and split by month
+        echo "cdo -splitmon -mergetime -selyear,1996/2000 ${infile_hist_basename}_199101-200012.nc ${infile_hist_basename}_200101-200512.nc $infile_scenario_path/$infile_scenario_basename* $outfile_lastdecade_temp $outdir/$scenario/$var/temp_mon_${var}_1996-2100_"
+        echo $outfile_lastdecade_temp
+        #cdo -splitmon -mergetime -selyear,1996/2000 ${infile_hist_basename}_199101-200012.nc ${infile_hist_basename}_200101-200512.nc $infile_scenario_path/$infile_scenario_basename* $outfile_lastdecade_temp $outdir/$scenario/$var/temp_mon_${var}_1996-2100_
+
+        # Step 1: Merge historical files
+        echo "Merging historical files..."
+        cdo selyear,1996/2000 ${infile_hist_basename}_199101-200012.nc temp_selected_hist1.nc
+
+        # Step 2: Merge hist and scenario files
+        echo "Merging hist and scenario files..."
+        cdo mergetime temp_selected_hist1.nc ${infile_hist_basename}_200101-200512.nc $infile_scenario_path/$infile_scenario_basename* temp_selected_years.nc
+
+        # Step 4: Split by month
+        echo "Splitting by month..."
+        cdo splitmon temp_selected_years.nc $outdir/$scenario/$var/temp_mon_${var}_1996-2100_
 
 
-#Calculate running mean
-for file in $outdir/$scenario/$var/temp_mon_${var}_1996-2100_*; do
-    echo $file
-    cdo runmean,21 $file $file.runmean.nc 
+        #Calculate running mean
+        for file in $outdir/$scenario/$var/temp_mon_${var}_1996-2100_*; do
+            echo $file
+            cdo runmean,21 $file $file.runmean.nc 
+        done
+
+        #Merge the 12 monthly timeseries, and split by year
+        cdo -mergetime $outdir/$scenario/$var/temp_mon_${var}_1996-2100_*.runmean.nc $outdir/$scenario/$var/temp_${var}_runmean_all.nc
+        cdo splityear $outdir/$scenario/$var/temp_${var}_runmean_all.nc $outdir/$scenario/$var/temp_year_${var}_
+
+        #Subtract/divide by baseyear to calculate anomalies/scaling factors
+        if [[ " ${anomaly_list[@]} " =~ " ${var} " ]]; then
+            echo "Calculate anomalies"
+            for file in $outdir/$scenario/$var/temp_year_${var}_*; do    
+                cdo sub $file $outfile_baseclimate $file.anomaly.nc
+            done
+        elif [[ " ${scale_list[@]} " =~ " ${var} " ]]; then
+            echo "Calculate scaling factors"
+            for file in $outdir/$scenario/$var/temp_year_${var}_*; do  
+                echo $file  
+                cdo div $file $outfile_baseclimate $file.anomaly.nc
+                #cdo div $file $outfile_baseclimate $file.anomaly_temp.nc
+                #cdo -setrtoc,5,Inf,5 -setrtoc,-Inf,0,0 $file.anomaly_temp.nc $file.anomaly.nc
+            done
+        else
+            echo "Variable not in lists"
+        fi
+
+        if [[ " ${scale_list[@]} " =~ " ${var} " ]]; then
+            #cdo mergetime -setrtoc,5,1000000,5 $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/$outfile_anomaly
+            
+            cdo mergetime $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/all_notcapped.nc
+            rm $outdir/$scenario/$var/temp*
+
+            # Ensure files are ready
+            echo "Sleeping for 5 seconds..."
+            sleep 5
+            echo "Starting after sleep..."
+            
+            cdo -setrtoc,5,inf,5 $outdir/$scenario/$var/all_notcapped.nc $outdir/$scenario/$var/$outfile_anomaly
+
+            rm $outdir/$scenario/$var/all_notcapped.nc
+        else
+            cdo mergetime $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/$outfile_anomaly
+            rm $outdir/$scenario/$var/temp*
+        fi
+
+        rm temp_*
+
+    done
 done
-
-#Merge the 12 monthly timeseries, and split by year
-cdo -mergetime $outdir/$scenario/$var/temp_mon_${var}_1996-2100_*.runmean.nc $outdir/$scenario/$var/temp_${var}_runmean_all.nc
-cdo splityear $outdir/$scenario/$var/temp_${var}_runmean_all.nc $outdir/$scenario/$var/temp_year_${var}_
-
-#Subtract/divide by baseyear to calculate anomalies/scaling factors
-if [[ " ${anomaly_list[@]} " =~ " ${var} " ]]; then
-    echo "Calculate anomalies"
-    for file in $outdir/$scenario/$var/temp_year_${var}_*; do    
-        cdo sub $file $outfile_baseclimate $file.anomaly.nc
-    done
-elif [[ " ${scale_list[@]} " =~ " ${var} " ]]; then
-    echo "Calculate scaling factors"
-    for file in $outdir/$scenario/$var/temp_year_${var}_*; do  
-        echo $file  
-        cdo div $file $outfile_baseclimate $file.anomaly.nc
-        #cdo div $file $outfile_baseclimate $file.anomaly_temp.nc
-        #cdo -setrtoc,5,Inf,5 -setrtoc,-Inf,0,0 $file.anomaly_temp.nc $file.anomaly.nc
-    done
-else
-    echo "Variable not in lists"
-fi
-
-if [[ " ${scale_list[@]} " =~ " ${var} " ]]; then
-    #cdo mergetime -setrtoc,5,1000000,5 $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/$outfile_anomaly
-    
-    cdo mergetime $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/all_notcapped.nc
-    rm $outdir/$scenario/$var/temp*
-
-    # Ensure files are ready
-    echo "Sleeping for 5 seconds..."
-    sleep 5
-    echo "Starting after sleep..."
-    
-    cdo -setrtoc,5,inf,5 $outdir/$scenario/$var/all_notcapped.nc $outdir/$scenario/$var/$outfile_anomaly
-
-    rm $outdir/$scenario/$var/all_notcapped.nc
-else
-    cdo mergetime $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/$outfile_anomaly
-    rm $outdir/$scenario/$var/temp*
-fi
-
-rm temp_*
