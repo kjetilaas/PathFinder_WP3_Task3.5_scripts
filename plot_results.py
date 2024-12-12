@@ -5,12 +5,12 @@ import cartopy.crs as ccrs
 
 # Define variable and scenario
 var='tas' #tas or pr
-scenario='rcp26'
+scenario='rcp45'
 outdir='Figures/'
 
 cordex_GCMmodel='MPI-M-MPI-ESM-LR'
 cordex_GCM_sim='r1i1p1'
-cordex_RCM='MPI-CSC-REMO2009_v1' #CLMcom-CCLM4-8-17_v1, MPI-CSC-REMO2009_v1
+cordex_RCM='SMHI-RCA4_v1a' #CLMcom-CCLM4-8-17_v1, MPI-CSC-REMO2009_v1 SMHI-RCA4_v1a
 
 selected_lat = 60.0  
 selected_lon = 10.75  
@@ -26,7 +26,8 @@ def lat_lon_to_index(selected_lat, selected_lon, lat_values, lon_values):
     return rlat, rlon
 
 # Load the netCDF file
-ds = xr.open_dataset(f'/storage/no-backup-nac/PATHFINDER/EURO-CORDEX/{scenario}/{var}/{var}_EUR-11_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}_anomalies_2005-2100.nc')
+#ds = xr.open_dataset(f'/storage/no-backup-nac/PATHFINDER/EURO-CORDEX/{scenario}/{var}/{var}_EUR-11_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}_anomalies_2005-2100.nc')
+ds = xr.open_dataset(f'output_files/{scenario}/{var}/{var}_EUR-11_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}_anomalies_2005-2100.nc')
 
 # Convert from lat/lon to rlat/rlon
 rlat, rlon = lat_lon_to_index(selected_lat, selected_lon, ds['lat'].values, ds['lon'].values)
