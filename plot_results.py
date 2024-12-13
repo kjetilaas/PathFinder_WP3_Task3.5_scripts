@@ -4,8 +4,8 @@ import numpy as np
 import cartopy.crs as ccrs
 
 # Define variable and scenario
-var='tas' #tas or pr
-scenario='rcp45'
+#var='tas' #tas or pr
+#scenario='rcp45'
 outdir='Figures/'
 
 cordex_GCMmodel='MPI-M-MPI-ESM-LR'
@@ -25,45 +25,50 @@ def lat_lon_to_index(selected_lat, selected_lon, lat_values, lon_values):
 
     return rlat, rlon
 
-# Load the netCDF file
-#ds = xr.open_dataset(f'/storage/no-backup-nac/PATHFINDER/EURO-CORDEX/{scenario}/{var}/{var}_EUR-11_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}_anomalies_2005-2100.nc')
-ds = xr.open_dataset(f'output_files/{scenario}/{var}/{var}_EUR-11_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}_anomalies_2005-2100.nc')
+#Loop over variables and scenarios
+for var in ['tas', 'pr']:
+    for scenario in ['rcp26', 'rcp45', 'rcp85']:        
+        print(f'Processing {var} for {scenario}')
 
-# Convert from lat/lon to rlat/rlon
-rlat, rlon = lat_lon_to_index(selected_lat, selected_lon, ds['lat'].values, ds['lon'].values)
+        # Load the netCDF file
+        #ds = xr.open_dataset(f'/storage/no-backup-nac/PATHFINDER/EURO-CORDEX/{scenario}/{var}/{var}_EUR-11_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}_anomalies_2005-2100.nc')
+        ds = xr.open_dataset(f'output_files/{scenario}/{var}/{var}_EUR-11_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}_anomalies_2005-2100.nc')
 
-# Select a point based on rlat/rlon coordinates
-selected_point = ds[var][:, rlat, rlon]
+        # Convert from lat/lon to rlat/rlon
+        rlat, rlon = lat_lon_to_index(selected_lat, selected_lon, ds['lat'].values, ds['lon'].values)
 
-# Calculate the average over the last 10 years (2091-2100)
-last_10_years = ds[var][-120:].mean(dim='time').values
+        # Select a point based on rlat/rlon coordinates
+        selected_point = ds[var][:, rlat, rlon]
 
-# Create a map plot for the average temperature/precip
-plt.figure(figsize=(10, 6))
-ax = plt.axes(projection=ccrs.PlateCarree())
-plt.contourf(ds['lon'], ds['lat'], last_10_years, 60, transform=ccrs.PlateCarree())
-ax.coastlines()
-plt.colorbar(label=f'{var} ({ds[var].units})')
-plt.title(f'Average {var}  Anomaly/Factor (2091-2100)')
-plt.savefig(f"{outdir}/Anomalies_map_{var}_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}.png")
+        # Calculate the average over the last 10 years (2091-2100)
+        last_10_years = ds[var][-120:].mean(dim='time').values
 
-# Calculate the yearly average temperature/precip
-yearly_avg = selected_point.resample(time='Y').mean()
+        # Create a map plot for the average temperature/precip
+        plt.figure(figsize=(10, 6))
+        ax = plt.axes(projection=ccrs.PlateCarree())
+        plt.contourf(ds['lon'], ds['lat'], last_10_years, 60, transform=ccrs.PlateCarree())
+        ax.coastlines()
+        plt.colorbar(label=f'{var} ({ds[var].units})')
+        plt.title(f'Average {var}  Anomaly/Factor (2091-2100)')
+        plt.savefig(f"{outdir}/Anomalies_map_{var}_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}.png")
 
-# Create a subplot for the time series of yearly data
-plt.figure(figsize=(10, 6))
-plt.subplot(2, 1, 1)
-plt.plot(ds['time'][::12].values, yearly_avg)
-plt.title(f'Yearly {var} at Point ({selected_lat}N,{selected_lon}E)')
-plt.xlabel('Time')
-plt.ylabel(f'{var} ({ds[var].units})')
+        # Calculate the yearly average temperature/precip
+        yearly_avg = selected_point.resample(time='Y').mean()
 
-# Create a subplot for the time series of July data
-plt.subplot(2, 1, 2)
-plt.plot(ds['time'][6::12].values, selected_point[6::12])
-plt.title(f'July {var} at Point ({selected_lat}N,{selected_lon}E)')
-plt.xlabel('Time')
-plt.ylabel(f'{var} ({ds[var].units})')
+        # Create a subplot for the time series of yearly data
+        plt.figure(figsize=(10, 6))
+        plt.subplot(2, 1, 1)
+        plt.plot(ds['time'][::12].values, yearly_avg)
+        plt.title(f'Yearly {var} at Point ({selected_lat}N,{selected_lon}E)')
+        plt.xlabel('Time')
+        plt.ylabel(f'{var} ({ds[var].units})')
 
-plt.tight_layout()
-plt.savefig(f"{outdir}/Anomalies_timeseries_{var}_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}.png")
+        # Create a subplot for the time series of July data
+        plt.subplot(2, 1, 2)
+        plt.plot(ds['time'][6::12].values, selected_point[6::12])
+        plt.title(f'July {var} at Point ({selected_lat}N,{selected_lon}E)')
+        plt.xlabel('Time')
+        plt.ylabel(f'{var} ({ds[var].units})')
+
+        plt.tight_layout()
+        plt.savefig(f"{outdir}/Anomalies_timeseries_{var}_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}.png")
