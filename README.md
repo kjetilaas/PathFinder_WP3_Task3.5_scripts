@@ -23,28 +23,14 @@ This repository contains scripts to calculate scaling factors and anomalies from
 
 3. **Load necessary modules:**
 
-    Ensure you have the required modules loaded. For example, on CICERO machine "qbo":
+    Ensure you have CDO loaded. For example, on CICERO machine "qbo":
 
     ```sh
     module purge
     module load CDO/1.9.8-foss-2019b
     ```
 
-4. **Modify relevant variables:**
-
-    Update the script variables to match your specific dataset and paths. For example, in `Generate_anomalies.sh`:
-
-    ```sh
-    cordex_GCMmodel=MPI-M-MPI-ESM-LR
-    cordex_GCM_sim=r1i1p1
-    cordex_RCM=SMHI-RCA4_v1a
-    indir=input_files/
-    outdir=output_files/
-    ```
-
-    The script currently processes `tas` and `pr` variables. If you need to process other variables or use a different model combination, you will need to update the dataset and generate new download scripts accordingly.
-
-5. **Generate anomalies and scaling factors:**
+4. **Generate anomalies and scaling factors:**
 
     Run the `Generate_anomalies.sh` script to process the data and generate the output files:
 
@@ -52,10 +38,22 @@ This repository contains scripts to calculate scaling factors and anomalies from
     ./Generate_anomalies.sh
     ```
 
-6. **Check the output:**
+5. **Check the output:**
 
-    The generated anomalies and scaling factors will be saved in the specified output directory.
+    The generated anomalies and scaling factors will be saved in the specified output directory. The python script `plot_results.py` can be used to plot the output, including timeseries for individual grid points, by modifying `selected_lat` and `selected_lon`. If no changes have been made to the scripts, the existing figures 
 
-## Additional Information
+## Modifying Variables or Models (NB: this has not yet been tested, so modify with care)
 
-For more details on the methodology and usage, refer to the comments within the scripts and the references provided in the script headers. Questions can be posted as issues, or via email. 
+If you need to modify the variables or use a different model combination, you will first need to generate new download scripts from the relevant ESGF server (for our model combination, this is https://esg-dn1.nsc.liu.se/search/esgf-liu/). .
+
+For other variables, modify `variables` in `download_data.sh` and `generate_anomalies.sh`, e.g.: 
+```sh
+variablse=("huss" "rsds")
+```
+
+For other model combinations, modify the following variables in `generate_anomalies.sh`:
+```sh
+cordex_GCMmodel=MPI-M-MPI-ESM-LR
+cordex_GCM_sim=r1i1p1
+cordex_RCM=SMHI-RCA4_v1a
+```

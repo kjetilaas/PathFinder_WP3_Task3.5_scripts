@@ -23,15 +23,15 @@ cordex_hist_model=${cordex_GCMmodel}_historical_${cordex_GCM_sim}_${cordex_RCM}
 indir=input_files/ #/div/no-backup/CORDEX/EUR-11/
 outdir=output_files/ #/storage/no-backup-nac/PATHFINDER/EURO-CORDEX/
 
-#Define varialbe and scenario. Now defined below in loop.
-#var=pr #pr, tas 
-#scenario=rcp45 #rcp26 rcp45, rcp85
+#Define varialbe and scenario. Update this to match the files you have downloaded.
+variables=("pr" "tas")
+scenarios=("rcp26" "rcp45" "rcp85")
 
 anomaly_list="tas uas vas ps huss"
 scale_list="pr rsds rlds" 
 
-syear_baseline=1996 #NB: climatology calculation is currently partly hardcoded to 1996-2005.
-eyear_baseline=2015 #NB: climatology calculation is currently partly hardcoded to 1996-2005.
+syear_baseline=1996 #NB: climatology calculation is currently partly hardcoded to 1996-2015.
+eyear_baseline=2015 #NB: climatology calculation is currently partly hardcoded to 1996-2015.
 
 ###Download data from https://esgf-data.dkrz.de/search/esgf-dkrz/
 #Search for "cordex", "historical"/"rcp85","mon", "tas"/"pr", "EUR-11", "HIRHAM5", "v3". 
@@ -39,10 +39,10 @@ eyear_baseline=2015 #NB: climatology calculation is currently partly hardcoded t
 #bash WGET_pr_EUR-11_NCC-NorESM1-M_rcp45_r1i1p1_DMI-HIRHAM5_v3_mon.sh -s 
 
 
-for var in pr tas; do #pr tas
+for var in "${variables[@]}"; do #pr tas
     echo 'Variable: '$var
 
-    for scenario in rcp26 rcp45 rcp85; do #historical rcp26 rcp45 rcp85
+    for scenario in "${scenarios[@]}"; do #historical rcp26 rcp45 rcp85
         echo 'Scenario: '$scenario
 
         #Define derived paths and base filenames
@@ -114,15 +114,12 @@ for var in pr tas; do #pr tas
             for file in $outdir/$scenario/$var/temp_year_${var}_*; do  
                 echo $file  
                 cdo div $file $outfile_baseclimate $file.anomaly.nc
-                #cdo div $file $outfile_baseclimate $file.anomaly_temp.nc
-                #cdo -setrtoc,5,Inf,5 -setrtoc,-Inf,0,0 $file.anomaly_temp.nc $file.anomaly.nc
             done
         else
             echo "Variable not in lists"
         fi
 
-        if [[ " ${scale_list[@]} " =~ " ${var} " ]]; then
-            #cdo mergetime -setrtoc,5,1000000,5 $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/$outfile_anomaly
+        if [[ " ${scale_list[@]} " =~ " ${var} " ]]; then            
             
             cdo mergetime $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/all_notcapped.nc
             rm $outdir/$scenario/$var/temp*
@@ -131,10 +128,10 @@ for var in pr tas; do #pr tas
             echo "Sleeping for 5 seconds..."
             sleep 5
             echo "Starting after sleep..."
-            
-            cdo -setrtoc,5,inf,5 $outdir/$scenario/$var/all_notcapped.nc $outdir/$scenario/$var/$outfile_anomaly
+            cdo -setattribute,$var@units=- $outdir/$scenario/$var/all_notcapped.nc $outdir/$scenario/$var/all_notcapped_newunits.nc
+            cdo -setrtoc,5,inf,5 $outdir/$scenario/$var/all_notcapped_newunits.nc $outdir/$scenario/$var/$outfile_anomaly
 
-            rm $outdir/$scenario/$var/all_notcapped.nc
+            rm $outdir/$scenario/$var/all_notcapped*.nc
         else
             cdo mergetime $outdir/$scenario/$var/temp_year_${var}_*.anomaly.nc $outdir/$scenario/$var/$outfile_anomaly
             rm $outdir/$scenario/$var/temp*

@@ -49,7 +49,10 @@ for var in ['tas', 'pr']:
         plt.contourf(ds['lon'], ds['lat'], last_10_years, 60, transform=ccrs.PlateCarree())
         ax.coastlines()
         plt.colorbar(label=f'{var} ({ds[var].units})')
-        plt.title(f'Average {var}  Anomaly/Factor (2091-2100)')
+        if var in ['tas', 'uas', 'vas', 'ps', 'huss']:
+            plt.title(f'Average {var} anomaly (2091-2100)')
+        elif var in ['pr', 'rsds', 'rlds']:
+            plt.title(f'Average {var} scaling factor (2091-2100)')
         plt.savefig(f"{outdir}/Anomalies_map_{var}_{cordex_GCMmodel}_{scenario}_{cordex_GCM_sim}_{cordex_RCM}.png")
 
         # Calculate the yearly average temperature/precip
