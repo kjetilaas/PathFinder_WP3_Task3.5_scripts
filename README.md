@@ -57,3 +57,15 @@ cordex_GCMmodel=MPI-M-MPI-ESM-LR
 cordex_GCM_sim=r1i1p1
 cordex_RCM=SMHI-RCA4_v1a
 ```
+
+## Additional information for use with Yassso
+Below are a couple of commands you can use to generate 5-yr mean values for a specific grid (here to use in the Yasso model), which can then be filled into a csv (for use in the Yasso model). 
+
+From "Yasso_files/" run:
+ ```sh
+cdo -remapbil,yasso_grid.txt -timselmean,5 -selyear,2016/2100 -yearavg [ -mergetime ../input_files/rcp45/pr/pr_EUR-11_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1a_mon_20* ] pr_EUR-regridded_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1a_2016-2100_5yrmean.nc
+
+cdo -remapbil,yasso_grid.txt -timselmean,5 -selyear,2016/2100 -yearavg [ -mergetime ../input_files/rcp45/tas/tas_EUR-11_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1a_mon_20* ] tas_EUR-regridded_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1a_2016-2100_5yrmean.nc
+```
+
+This will generate 5-year mean values remapped to a regular latlon grid with 0.1 degree resolution, which matches the grid of the csv file "Yasso_files/yasso_grid.txt". The python script "fill_yasso_csv.py" can then be used to read this file and fill it into the example csv file "Yasso_files/TP_EU_RCP45_3035_empty_short.csv"
